@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-yaml/yaml"
 	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
@@ -29,7 +29,7 @@ func writeFile(config interface{}, filename string) {
 		panic(err)
 	}
 }
-func TestMain(t *testing.T) {
+func TestLoadConfigFromFile(t *testing.T) {
 	src := Config{
 		1,
 		"Hello",

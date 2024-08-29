@@ -3,9 +3,9 @@ package config
 import (
 	"flag"
 	"fmt"
-	"github.com/go-yaml/yaml"
 	"github.com/jinzhu/copier"
 	log "github.com/rowdyroad/go-simple-logger"
+	"gopkg.in/yaml.v3"
 	"io"
 	"os"
 	"path/filepath"

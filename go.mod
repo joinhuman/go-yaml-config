@@ -2,13 +2,10 @@ module github.com/rowdyroad/go-yaml-config
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/docker v1.13.1
-	github.com/go-yaml/yaml v2.1.0+incompatible
-	github.com/jinzhu/copier v0.0.0-20190625015134-976e0346caa8
-	github.com/rowdyroad/go-simple-logger v0.0.0-20190809122636-ef0165213630
+	github.com/jinzhu/copier v0.4.0
+	github.com/rowdyroad/go-simple-logger v0.0.0-20191211005020-b2f8b6fb4880
 	github.com/stretchr/testify v1.4.0
-	gopkg.in/go-playground/assert.v1 v1.2.1
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 go 1.13
