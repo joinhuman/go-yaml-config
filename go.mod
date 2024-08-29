@@ -1,4 +1,4 @@
-module github.com/rowdyroad/go-yaml-config
+module github.com/joinhuman/go-yaml-config
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
