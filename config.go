@@ -2,80 +2,73 @@ package config
 
 import (
 	"flag"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
-	"syscall"
-
+	"fmt"
 	"github.com/go-yaml/yaml"
 	"github.com/jinzhu/copier"
 	log "github.com/rowdyroad/go-simple-logger"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-//LoadConfigFromFile loading config from yaml file
-func LoadConfigFromFile(config interface{}, configFile string, defaultValue interface{}) string {
-	log.Debugf("Reading configuration from '%s'", configFile)
+// LoadConfigFromFile loading config from yaml file
+func LoadConfigFromFile(config interface{}, configFileName string, defaultValue interface{}) (string, error) {
+	log.Debugf("Reading configuration from '%s'", configFileName)
 
-	data, err := ioutil.ReadFile(configFile)
+	configFile, err := os.Open(configFileName)
 	if err != nil {
 		log.Warn("Configuration not found")
 		if defaultValue != nil {
 			log.Warn("Default value is defined. Using it.")
 			copier.Copy(config, defaultValue)
-			return ""
+			return "", nil
 		}
-		panic(err)
+		return "", fmt.Errorf("os.Open(configFileName): %v", err)
 	}
 
-	if err := yaml.Unmarshal([]byte(os.Expand(string(data), getEnvWithDefault)), config); err != nil {
+	if err := LoadConfigFromReader(config, configFile, defaultValue); err != nil {
+		return "", fmt.Errorf("LoadConfigFromReader(config, configFile, defaultValue): %v", err)
+	}
+
+	customConfigFileName := filepath.Join(
+		filepath.Dir(configFileName),
+		strings.TrimSuffix(filepath.Base(configFileName), filepath.Ext(configFileName))+".custom"+filepath.Ext(configFileName),
+	)
+	log.Debugf("Try to read custom configuration from '%s'...", customConfigFileName)
+	customConfigFile, err := os.Open(customConfigFileName)
+	if err == nil {
+		log.Debugf("Reading custom configuration from '%s'", customConfigFileName)
+		if err = LoadConfigFromReader(config, customConfigFile, defaultValue); err != nil {
+			return "", fmt.Errorf("LoadConfigFromReader(config, customConfigFile, defaultValue): %v", err)
+		}
+		log.Debug("Config loaded successfully with custom config file")
+		return customConfigFileName, nil
+	}
+
+	log.Debug("Config loaded successfully")
+	return configFileName, nil
+}
+
+func LoadConfigFromReader(config interface{}, configReader io.Reader, defaultValue interface{}) error {
+	if err := yaml.NewDecoder(configReader).Decode(config); err != nil {
 		log.Warn("Configuration incorrect ")
 		if defaultValue != nil {
 			log.Warn("Default value is defined. Use it.")
 			copier.Copy(config, defaultValue)
-			return ""
+			return nil
 		}
-		panic(err)
+		return fmt.Errorf("yaml.NewDecoder(configFile).Decode(config): %v", err)
 	}
 
-	customConfigFile := filepath.Join(
-		filepath.Dir(configFile),
-		strings.TrimSuffix(filepath.Base(configFile), filepath.Ext(configFile))+".custom"+filepath.Ext(configFile),
-	)
-	log.Debugf("Try to read custom configuration from '%s'...", customConfigFile)
-	data, err = ioutil.ReadFile(customConfigFile)
-	if err == nil {
-		log.Debugf("Reading custom configuration from '%s'", customConfigFile)
-		if err := yaml.Unmarshal([]byte(os.Expand(string(data),getEnvWithDefault)), config); err != nil {
-			panic(err)
-		}
-		log.Debug("Config loaded successfully with custom config file")
-		return customConfigFile
-	}
-
-	log.Debug("Config loaded successfully")
-	return configFile
+	return nil
 }
 
-//LoadConfig from command line argument
-func LoadConfig(config interface{}, defaultFilename string, defaultValue interface{}) string {
+// LoadConfig from command line argument
+func LoadConfig(config interface{}, defaultFilename string, defaultValue interface{}) (string, error) {
 	var configFile string
 	flag.StringVar(&configFile, "c", defaultFilename, "Config file")
 	flag.StringVar(&configFile, "config", defaultFilename, "Config file")
 	flag.Parse()
 	return LoadConfigFromFile(config, configFile, defaultValue)
-}
-
-func getEnvWithDefault(key string) string {
-	defaultVal := ""
-	if idx := strings.Index(key, "="); idx != -1 {
-		defaultVal = key[idx+1:]
-		defaultVal = strings.Trim(defaultVal, " ")
-		key = key[:idx]
-	}
-	v, has := syscall.Getenv(key)
-	if !has {
-		return defaultVal
-	}
-	return v
 }
